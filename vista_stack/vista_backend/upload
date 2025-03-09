@@ -1,0 +1,11 @@
+#!/bin/bash
+
+echo "Ì∫Ä Uploading backend to vista-ucf.com..."
+scp server.js bitnami@vista-ucf.com:~/backend/
+
+if [ $? -eq 0 ]; then
+    echo "‚úÖ Upload successful!"
+else
+    echo "‚ùå Upload failed!"
+fi
+
