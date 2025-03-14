@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Box, Card, CardContent, Typography, Slider, ToggleButton, ToggleButtonGroup, Switch, FormControlLabel } from "@mui/material";
-import { useDeviceAPI } from "../services/api"; // API function to update settings
+import { updateDeviceSettings } from "../services/api"; // API function to update settings
 
 export default function DeviceControls(){
     const [maxHumidity, setMaxHumidity] = useState(60);
@@ -10,11 +10,7 @@ export default function DeviceControls(){
     const [motionDetection, setMotionDetection] = useState(false);
     const [ecoMode, setEcoMode] = useState(false);
   
-     const [ getDeviceData,
-          checkDeviceStatus,
-          checkFrontendStatus,
-          updateDeviceSettings,
-          updateVent] = useDeviceAPI();
+     
   
     const handleUpdate = (key, value) => {
       updateDeviceSettings(key,value); // Send update to backend

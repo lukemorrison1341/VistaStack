@@ -4,7 +4,7 @@ import { useNavigate } from "react-router";
 import { Container, Card, CardContent, TextField, Button, Typography, Box } from '@mui/material';
 
 
-import { useDeviceAPI } from '../services/api';
+import { loginUser } from '../services/api';
 
 export default function SignInPage() {
 
@@ -14,11 +14,7 @@ export default function SignInPage() {
 
   const navigate = useNavigate();
 
-   const [ getDeviceData,
-        checkDeviceStatus,
-        checkFrontendStatus,
-        updateDeviceSettings,
-        updateVent] = useDeviceAPI();
+ 
 
   const handleSubmit = async (event) => { ///TODO: Change console.logs 
     event.preventDefault();

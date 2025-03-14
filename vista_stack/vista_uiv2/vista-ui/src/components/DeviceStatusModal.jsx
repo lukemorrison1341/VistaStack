@@ -1,18 +1,13 @@
 import React, { useEffect, useState,useNavigate } from "react";
 import { Modal, Box, Typography, CircularProgress, Button } from "@mui/material";
-import { useDeviceAPI} from "../services/api";
+import { checkDeviceStatus, checkFrontendStatus} from "../services/api";
 
 export default function DeviceStatusModal({ username, setDeviceConnected, setFrontendConnect, setBackendConnect}) {
   const [open, setOpen] = useState(true);
   const [deviceStatus, setDeviceStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
-   const [ getDeviceData,
-        checkDeviceStatus,
-        checkFrontendStatus,
-        updateDeviceSettings,
-        updateVent] = useDeviceAPI();
-
+   
   useEffect(() => {
     let isMounted = true; // ✅ Prevents state updates on unmounted components
   
