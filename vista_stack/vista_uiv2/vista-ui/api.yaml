@@ -1,0 +1,71 @@
+openapi: 3.0.0
+info:
+  title: VISTA API
+  version: 1.0.0
+  description: Mock backend for login requests.
+
+servers:
+  - url: http://localhost:4010
+    description: Local Prism Mock Server
+
+paths:
+  /api/user-login:
+    post:
+      summary: Receive a login request and send a success JSON response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Successful login response
+          content:
+            application/json:
+              example:
+                status: "success"
+                ip: 192.168.4.1
+                device_name: TEST
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                status: "fail"
+                error: "Invalid credentials"
+
+  /api/device-status/{username}:
+    get:
+      summary: Check the heartbeat status of a VISTA device.
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Device status response
+          content:
+            application/json:
+              example:
+                status: "online"
+                last_seen: "2024-03-09T12:34:56Z"
+        '404':
+          description: User Not Found
+          content:
+            application/json:
+              example:
+                error: "User Not Found"
+        '500':
+          description: Database Error
+          content:
+            application/json:
+              example:
+                error: "Database error"

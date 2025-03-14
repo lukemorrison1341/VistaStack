@@ -12,7 +12,7 @@ const theme = createTheme({
       main: '#8413b0',   // Your secondary color
     },
     background: {
-      default: '#c0becf', // Default background
+      default: '#d5e9f0', // Default background
     },
     error: {
       main: '#d1060a'
@@ -41,7 +41,7 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundColor: '#e9e8ed', // matches palette.background.default
+          backgroundColor: '#d5e9f0', // matches palette.background.default
         },
       },
     },

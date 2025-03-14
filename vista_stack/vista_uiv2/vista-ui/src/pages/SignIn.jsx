@@ -1,12 +1,55 @@
 import React from 'react';
+import {useState} from 'react';
 import { useNavigate } from "react-router";
 import { Container, Card, CardContent, TextField, Button, Typography, Box } from '@mui/material';
 
 
-import { loginUser } from '../services/api';
+import { useDeviceAPI } from '../services/api';
 
 export default function SignInPage() {
-  const navigator = useNavigate();
+
+  const [username, setUsername] = useState(''); 
+  const [password, setPassword] = useState('');
+
+
+  const navigate = useNavigate();
+
+   const [ getDeviceData,
+        checkDeviceStatus,
+        checkFrontendStatus,
+        updateDeviceSettings,
+        updateVent] = useDeviceAPI();
+
+  const handleSubmit = async (event) => { ///TODO: Change console.logs 
+    event.preventDefault();
+    
+    try {
+      // Ensure username & password are correctly extracted as strings
+      console.log("USERNAME " + username + "PASSWORD: " + password);
+      const trimmedUsername = username.trim();
+      const trimmedPassword = password.trim();
+      
+      if (!trimmedUsername || !trimmedPassword) {
+        console.log("Username and password cannot be empty.");
+        return;
+      }
+      
+      const data = await loginUser(trimmedUsername, trimmedPassword); // API Call
+  
+      if (data.status === 'success') {
+        localStorage.setItem('username', trimmedUsername);
+        localStorage.setItem('userIP', data.ip);
+        localStorage.setItem('deviceName', data.device_name);
+  
+        navigate('/dashboard');
+      } else {
+        setErrorMessage('Invalid username or password.');
+      }
+    } catch (error) {
+      console.log('Login failed. Please try again.');
+    }
+  };
+
   return (
     <Container
       component="main"
@@ -29,6 +72,7 @@ export default function SignInPage() {
               name="username"
               autoComplete="username"
               autoFocus
+              onChange={ (e) => setUsername(e.target.value)}
             />
             <TextField
               margin="normal"
@@ -39,13 +83,14 @@ export default function SignInPage() {
               type="password"
               id="password"
               autoComplete="current-password"
+              onChange={(e) => setPassword(e.target.value)}
             />
             <Button
               type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3 }}
-              onClick={ () => navigator("/dashboard")}
+              onClick={ (e) => handleSubmit(e)} 
             >
               Login
             </Button>
