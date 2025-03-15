@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Box, Typography, IconButton } from "@mui/material";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
-
+import { DeviceContext } from "../components/DataContext";
 export default function TemperatureControl() {
-  const [temperature, setTemperature] = useState(72);
+  const {temperature, setTemperature} = useContext(DeviceContext);
 
   const increaseTemp = () => setTemperature((prev) => Math.min(prev + 1, 90)); // Max temp 90°F
   const decreaseTemp = () => setTemperature((prev) => Math.max(prev - 1, 50)); // Min temp 50°F

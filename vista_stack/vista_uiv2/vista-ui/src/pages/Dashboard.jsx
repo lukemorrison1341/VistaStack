@@ -87,7 +87,7 @@ export default function Dashboard() {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton onClick={() => { setActiveTab("devices"); setIsDrawerOpen(false); sx={bgcolor: activeTab === "devices" ? "rgba(255,255,255,0.2)" : "transparent", "&:hover": {bgcolor: "rgba(255,255,255,0.3)"}} }}>
+            <ListItemButton onClick={() => { setActiveTab("devices"); setIsDrawerOpen(false);}}>
               <ListItemIcon>
                 <DevicesIcon sx={{ color: "white" }} />
               </ListItemIcon>

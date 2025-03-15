@@ -1,21 +1,19 @@
 //SET OTHER DEVICE CONFIGURATIONS LIKE - MAX HUMIDITY, MOTION DETECTION, ETC 
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Box, Card, CardContent, Typography, Slider, ToggleButton, ToggleButtonGroup, Switch, FormControlLabel } from "@mui/material";
 import { updateDeviceSettings } from "../services/api"; // API function to update settings
-
+import { DeviceContext } from "../components/DataContext";
 export default function DeviceControls(){
-    const [maxHumidity, setMaxHumidity] = useState(60);
-    const [ventStatus, setVentStatus] = useState("closed");
-    const [motionDetection, setMotionDetection] = useState(false);
-    const [ecoMode, setEcoMode] = useState(false);
-  
-     
-  
+  /*
+    Initial Values
+  */
+    const {maxHumidity, setMaxHumidity, ventStatus, setVentStatus, motionDetection, setMotionDetection, deviceMode, setDeviceMode} = useContext(DeviceContext);
     const handleUpdate = (key, value) => {
       updateDeviceSettings(key,value); // Send update to backend
     };
-  
+
+    const [enableMotionDetection, setEnableMotionDetection] = useState(false);
     return (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3, p: 3 }}>
         {/* Max Humidity Section */}
@@ -63,9 +61,9 @@ export default function DeviceControls(){
             <FormControlLabel
               control={
                 <Switch
-                  checked={motionDetection}
+                  checked={enableMotionDetection}
                   onChange={(e) => {
-                    setMotionDetection(e.target.checked);
+                    setEnableMotionDetection(e.target.checked);
                     handleUpdate("motionDetection", e.target.checked);
                   }}
                 />
@@ -82,9 +80,11 @@ export default function DeviceControls(){
             <FormControlLabel
               control={
                 <Switch
-                  checked={ecoMode}
+                  checked={deviceMode === "eco mode"}
                   onChange={(e) => {
-                    setEcoMode(e.target.checked);
+                    const newMode = e.target.checked ? "eco mode" : "vacant mode";
+                    console.log(newMode);
+                    setDeviceMode(newMode);
                     handleUpdate("ecoMode", e.target.checked);
                   }}
                 />

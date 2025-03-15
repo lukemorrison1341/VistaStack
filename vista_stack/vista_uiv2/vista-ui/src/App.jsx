@@ -5,11 +5,14 @@ import SignIn from './pages/SignIn';
 import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import { ConnectionProvider } from './components/ConnectionContext';
+import { DeviceProvider } from './components/DataContext';
 function App() {
 
   
   return (
+    
     <ConnectionProvider>
+      <DeviceProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<SignIn />} />
@@ -24,7 +27,9 @@ function App() {
           />   
         </Routes>
       </BrowserRouter>
+      </DeviceProvider>
     </ConnectionProvider>
+    
   );
 }
 

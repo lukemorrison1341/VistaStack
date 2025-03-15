@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:4010"; // Update as needed
+const API_BASE_URL = "http://www.vista-ucf.com:5000"; // Update as needed
 
 export const getDeviceData = async (username, frontendConnect, backendConnect) => {
   try {
@@ -8,7 +8,7 @@ export const getDeviceData = async (username, frontendConnect, backendConnect) =
 
     if (frontendConnect) {
       const esp32IP = localStorage.getItem("userIP");
-      const response = await axios.get(`${esp32IP}/api/component/data`);
+      const response = await axios.get(`http://${esp32IP}/api/component/data`);
       return { pir: response.data.pir, temp: response.data.temp, humid: response.data.humid, vent: response.data.vent };
     } else if (backendConnect) {
       console.log("Fetching device data from backend...");
@@ -63,7 +63,7 @@ export const updateDeviceSettings = async (key, value) => {
 
 export const updateVent = async (value, deviceConnected, frontendConnect) => {
   if (!deviceConnected) {
-    console.log("Device not connected...cannot send request to servo to open");
+    console.log("Device not connected...cannot send request to servo to open/close");
     return;
   }
 
