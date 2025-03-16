@@ -10,11 +10,10 @@ export default function SignInPage() {
 
   const [username, setUsername] = useState(''); 
   const [password, setPassword] = useState('');
-
+  const [error, setError] = useState(false);
+  const [errorText, setErrorText] = useState('');
 
   const navigate = useNavigate();
-
- 
 
   const handleSubmit = async (event) => { ///TODO: Change console.logs 
     event.preventDefault();
@@ -33,15 +32,19 @@ export default function SignInPage() {
       const data = await loginUser(trimmedUsername, trimmedPassword); // API Call
   
       if (data.status === 'success') {
+        
         localStorage.setItem('username', trimmedUsername);
         localStorage.setItem('userIP', data.ip);
         localStorage.setItem('deviceName', data.device_name);
-  
+        setError(false);
         navigate('/dashboard');
       } else {
-        setErrorMessage('Invalid username or password.');
+        setError(true);
+        setErrorText('Invalid username or password.');
       }
     } catch (error) {
+      setError(true);
+      setErrorText('Invalid username or password.');
       console.log('Login failed. Please try again.');
     }
   };
@@ -58,6 +61,7 @@ export default function SignInPage() {
           <Typography variant="h5" gutterBottom>
             Sign In
           </Typography>
+          {error & errorText}
           <Box component="form" noValidate>
             <TextField
               margin="normal"

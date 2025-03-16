@@ -8,29 +8,53 @@ export default function DeviceControls(){
   /*
     Initial Values
   */
-    const {maxHumidity, setMaxHumidity, ventStatus, setVentStatus, motionDetection, setMotionDetection, deviceMode, setDeviceMode} = useContext(DeviceContext);
+    const {minTemperature, setMinTemperature, maxTemperature, setMaxTemperature, maxHumidity, setMaxHumidity, minHumidity, setMinHumidity, ventStatus, setVentStatus, motionDetection, setMotionDetection, deviceMode, setDeviceMode} = useContext(DeviceContext);
     const handleUpdate = (key, value) => {
       updateDeviceSettings(key,value); // Send update to backend
     };
 
+
+  
+
     const [enableMotionDetection, setEnableMotionDetection] = useState(false);
     return (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3, p: 3 }}>
-        {/* Max Humidity Section */}
+
+        {/* Min & Max Temperature Section */}
         <Card>
           <CardContent>
-            <Typography variant="h6">🌫 Max Humidity</Typography>
-            <Slider
-              value={maxHumidity}
-              onChange={(e, newValue) => {
-                setMaxHumidity(newValue);
-                handleUpdate("maxHumidity", newValue);
-              }}
-              min={30}
-              max={80}
-              step={1}
-              valueLabelDisplay="auto"
-            />
+            <Typography variant="h6">🌫 Temperature</Typography>
+              <Slider
+                  value={[minTemperature, maxTemperature]} // ✅ Use array for two-way slider
+                  onChange={(e, newValue) => {
+                    setMinTemperature(newValue[0]); // ✅ Update min temperature
+                    setMaxTemperature(newValue[1]); // ✅ Update max temperature
+                    handleUpdate("temperatureRange", { min: newValue[0], max: newValue[1] }); // ✅ Send both values
+                  }}
+                min={60}
+                max={80}
+                step={1}
+                valueLabelDisplay="auto"
+              />
+          </CardContent>
+        </Card>
+
+        {/* Min & Max Humidity Section */}
+        <Card>
+          <CardContent>
+            <Typography variant="h6">🌫 Humidity</Typography>
+              <Slider
+                  value={[minHumidity, maxHumidity]} // ✅ Use array for two-way slider
+                  onChange={(e, newValue) => {
+                    setMinHumidity(newValue[0]); // ✅ Update min humidity
+                    setMaxHumidity(newValue[1]); // ✅ Update max humidity
+                    handleUpdate("humidityRange", { min: newValue[0], max: newValue[1] }); // ✅ Send both values
+                  }}
+                min={30}
+                max={80}
+                step={1}
+                valueLabelDisplay="auto"
+              />
           </CardContent>
         </Card>
   

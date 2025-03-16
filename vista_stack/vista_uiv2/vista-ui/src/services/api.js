@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://www.vista-ucf.com:5000"; // Update as needed
-
+//const API_BASE_URL = "http://www.vista-ucf.com:5000"; // Update as needed
+const API_BASE_URL = "http://localhost:4010"; // Update as needed
 export const getDeviceData = async (username, frontendConnect, backendConnect) => {
   try {
     console.log("Getting Device Data");
@@ -28,6 +28,7 @@ export const checkDeviceStatus = async (username) => {
   try {
     console.log("Checking Device Status");
     const response = await axios.get(`${API_BASE_URL}/api/device-status/${username}`);
+    localStorage.setItem("last_seen", response.last_seen);
     return response.data.status; // ✅ Returns "online" or "offline"
   } catch (error) {
     console.error("Error checking device status:", error);
@@ -55,13 +56,34 @@ export const updateDeviceSettings = async (key, value) => {
   switch (key) {
     case "vent":
       return await updateVent(value);
+    case "ecoMode":
     default:
       console.log("Invalid Device Update");
       return null;
   }
 };
 
-export const updateVent = async (value, deviceConnected, frontendConnect) => {
+
+export const updateDeviceConfig = async (config) => {
+  try {
+    const esp32IP = localStorage.getItem("userIP");
+    if (!esp32IP) {
+      console.error("❌ No ESP32 IP found in localStorage.");
+      return { success: false, error: "No stored IP" };
+    }
+
+    console.log("🚀 Sending Device Config:", config);
+    const response = await axios.post(`http://${esp32IP}/api/device/config`, config);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error updating device config:", error);
+    return { success: false, error };
+  }
+};
+
+
+
+const updateVent = async (value, deviceConnected, frontendConnect) => {
   if (!deviceConnected) {
     console.log("Device not connected...cannot send request to servo to open/close");
     return;

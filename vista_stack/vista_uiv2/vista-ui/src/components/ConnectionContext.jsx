@@ -13,7 +13,7 @@ export function ConnectionProvider({ children }) {
             console.log("Checking device and frontend status...");
             const backendStatus = await checkDeviceStatus(localStorage.getItem("username"));
             const frontendStatus = await checkFrontendStatus();
-
+            
             setBackendConnect(backendStatus === "online");
             setFrontendConnect(frontendStatus.status === "success");
         };
