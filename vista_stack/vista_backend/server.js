@@ -35,20 +35,39 @@ db.serialize(() => {
     )`);
 });
 
-db.serialize(() =>{
+db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            pir INTEGER CHECK (pir IN (0,1)) DEFAULT NULL, -- NULL until updated
-            mode INTEGER CHECK (pir IN (0,1)) DEFAULT NULL, -- NULL until updated
-            temp REAL DEFAULT NULL, -- NULL until updated
-            registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        )`)
-
-
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        pir INTEGER CHECK (pir IN (0,1)) DEFAULT NULL, -- NULL until updated
+        vent INTEGER CHECK (vent IN (0,1)) DEFAULT NULL, -- NULL until updated
+        humidity REAL DEFAULT NULL, -- NULL until updated
+        temp REAL DEFAULT NULL, -- NULL until updated
+        registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`, (err) => {
+        if (err) {
+            console.error("Error creating data table:", err.message);
+        } else {
+            console.log("Table 'data' created or already exists.");
+        }
+    });
 });
 
+
+
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS device_config (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        min_temp INTEGER CHECK(min_temp BETWEEN 50 AND 90) NOT NULL,
+        max_temp INTEGER CHECK(max_temp BETWEEN 50 AND 90) NOT NULL,
+        min_humidity INTEGER CHECK(min_humidity BETWEEN 50 AND 90) NOT NULL,
+        max_humidity INTEGER CHECK(max_humidity BETWEEN 50 AND 90) NOT NULL,
+        motion_detection_enabled INTEGER CHECK(motion_detection_enabled IN (0, 1)) DEFAULT 1,
+        eco_mode_enabled INTEGER CHECK(eco_mode_enabled IN (0, 1)) DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+});
 
 app.use(express.json());
 app.use(cors());
@@ -59,6 +78,48 @@ app.use(cors());
 // Test API Route
 app.get("/", (req, res) => {
     res.json({ message: "Enter username and password." });
+});
+
+
+app.post("/api/send-config", (req, res) => {
+    console.log("Frontend request to /api/send-config");
+    const {
+        username,
+        min_temp,
+        max_temp,
+        min_humidity,
+        max_humidity,
+        motion_detection_enabled,
+        eco_mode_enabled
+    } = req.body;
+
+
+    if (
+        !username ||
+        min_temp === undefined ||
+        max_temp === undefined ||
+        min_humidity === undefined ||
+        max_humidity === undefined ||
+        motion_detection_enabled === undefined ||
+        eco_mode_enabled === undefined
+    ) {
+        return res.status(400).json({ error: "Missing one or more required fields." });
+    }
+
+    db.run(
+        `INSERT INTO device_config 
+            (username, min_temp, max_temp, min_humidity, max_humidity, motion_detection_enabled, eco_mode_enabled, updated_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        [username, min_temp, max_temp, min_humidity, max_humidity, motion_detection_enabled, eco_mode_enabled],
+        function (err) {
+            if (err) {
+                console.error("Update Config DB Error:", err.message);
+                return res.status(500).json({ error: "Failed to update config" });
+            }
+
+            res.status(200).json({ message: "Configuration updated successfully", config_id: this.lastID });
+        }
+    );
 });
 
 
@@ -115,7 +176,6 @@ app.post("/api/relay", (req, res) => { //POST to this endpoint from frontend whe
             
         }
     });
-
 });
 
 //Get heartbeat status from user
@@ -140,7 +200,7 @@ app.get("/api/device-status/:username", (req, res) => {
         const currentTime = new Date();
         const timeDiff = (currentTime - lastSeenTime) / 1000; // Difference in seconds
 
-        const online = timeDiff <= 60; //If last check-in was within 2 minutes, it's online
+        const online = timeDiff <= 180; //If last check-in was within 3 minutes, it's online
 
         res.json({ username, status: online ? "online" : "offline", last_seen: row.last_seen });
     });
@@ -156,6 +216,88 @@ app.get("/api/test", (req, res) => {
     return res.status(200).json({status: "online"});
 
 });
+
+
+//ESP32 retrieves config if web app updated it.
+app.get("/api/get_config", (req, res) => {
+    console.log("Got ESP32 device config GET request");
+    const {username} = req.body;
+
+    if (!username) {
+        return res.status(400).json({ error: "Missing username in query parameters." });
+    }
+
+    db.get(
+        "SELECT min_temp, max_temp, min_humidity, max_humidity, motion_detection_enabled, eco_mode_enabled, updated_at FROM device_config WHERE username = ? ORDER BY updated_at DESC LIMIT 1",
+        [username],
+        (err, row) => {
+            if (err) {
+                console.error("Database error in /api/get_config:", err.message);
+                return res.status(500).json({ error: "Internal server error" });
+            }
+
+            if (!row) {
+                return res.status(404).json({ error: "No config found for this user." });
+            }
+
+            res.json({ username, ...row });
+        }
+    );
+
+});
+
+
+app.post("/api/data", (req, res) => { //ESP32 sends data here 
+    const { username, temperature, pir, humidity, vent } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ error: "Missing required field (username). (/api/data)" });
+    }
+
+    // Check if user already exists in the data table
+    db.get("SELECT * FROM data WHERE username = ? ORDER BY registered_at DESC LIMIT 1", [username], (err, row) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Internal server error" });
+        }
+
+        if (row) {
+            // User exists – update their most recent data row
+            db.run(
+                `UPDATE data SET 
+                    temp = ?, 
+                    pir = ?, 
+                    humidity = ?, 
+                    vent = ?, 
+                    registered_at = CURRENT_TIMESTAMP 
+                 WHERE id = ?`,
+                [temperature, pir, humidity, vent, row.id],
+                function (err) {
+                    if (err) {
+                        console.error("Update error:", err);
+                        return res.status(500).json({ error: "Failed to update data" });
+                    }
+                    return res.status(200).json({ message: "Data updated successfully" });
+                }
+            );
+        } else {
+            // No entry exists for this user – insert new row
+            db.run(
+                `INSERT INTO data (username, temp, pir, humidity, vent) VALUES (?, ?, ?, ?, ?)`,
+                [username, temperature, pir, humidity, vent],
+                function (err) {
+                    if (err) {
+                        console.error("Insert error:", err);
+                        return res.status(500).json({ error: "Failed to insert data" });
+                    }
+                    return res.status(200).json({ message: "Data inserted successfully" });
+                }
+            );
+        }
+    });
+});
+
+
 
 
 // **POST: Receive IP, Username, Password, Device Name from ESP32 to register itself, save user information in database.  
