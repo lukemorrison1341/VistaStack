@@ -59,10 +59,10 @@ db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS device_config (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
-        min_temp INTEGER CHECK(min_temp BETWEEN 50 AND 90) NOT NULL,
-        max_temp INTEGER CHECK(max_temp BETWEEN 50 AND 90) NOT NULL,
-        min_humidity INTEGER CHECK(min_humidity BETWEEN 50 AND 90) NOT NULL,
-        max_humidity INTEGER CHECK(max_humidity BETWEEN 50 AND 90) NOT NULL,
+        min_temp INTEGER NOT NULL,
+        max_temp INTEGER NOT NULL,
+        min_humidity INTEGER NOT NULL,
+        max_humidity INTEGER NOT NULL,
         motion_detection_enabled INTEGER CHECK(motion_detection_enabled IN (0, 1)) DEFAULT 1,
         eco_mode_enabled INTEGER CHECK(eco_mode_enabled IN (0, 1)) DEFAULT 0,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -82,7 +82,7 @@ app.get("/", (req, res) => {
 
 
 app.post("/api/send-config", (req, res) => {
-    console.log("Frontend request to /api/send-config");
+    console.log("Updating config /api/send-config");
     const {
         username,
         min_temp,
@@ -92,7 +92,6 @@ app.post("/api/send-config", (req, res) => {
         motion_detection_enabled,
         eco_mode_enabled
     } = req.body;
-
 
     if (
         !username ||
@@ -106,20 +105,51 @@ app.post("/api/send-config", (req, res) => {
         return res.status(400).json({ error: "Missing one or more required fields." });
     }
 
-    db.run(
-        `INSERT INTO device_config 
-            (username, min_temp, max_temp, min_humidity, max_humidity, motion_detection_enabled, eco_mode_enabled, updated_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-        [username, min_temp, max_temp, min_humidity, max_humidity, motion_detection_enabled, eco_mode_enabled],
-        function (err) {
-            if (err) {
-                console.error("Update Config DB Error:", err.message);
-                return res.status(500).json({ error: "Failed to update config" });
-            }
-
-            res.status(200).json({ message: "Configuration updated successfully", config_id: this.lastID });
+    // Check if a config already exists for this username
+    db.get("SELECT id FROM device_config WHERE username = ?", [username], (err, row) => {
+        if (err) {
+            console.error("DB read error:", err.message);
+            return res.status(500).json({ error: "Database error" });
         }
-    );
+
+        if (row) {
+            // Update existing config
+            db.run(
+                `UPDATE device_config SET 
+                    min_temp = ?, 
+                    max_temp = ?, 
+                    min_humidity = ?, 
+                    max_humidity = ?, 
+                    motion_detection_enabled = ?, 
+                    eco_mode_enabled = ?, 
+                    updated_at = CURRENT_TIMESTAMP 
+                 WHERE username = ?`,
+                [min_temp, max_temp, min_humidity, max_humidity, motion_detection_enabled, eco_mode_enabled, username],
+                function (err) {
+                    if (err) {
+                        console.error("Update Config DB Error:", err.message);
+                        return res.status(500).json({ error: "Failed to update config" });
+                    }
+                    res.status(200).json({ message: "Configuration updated successfully" });
+                }
+            );
+        } else {
+            // Insert new config
+            db.run(
+                `INSERT INTO device_config 
+                    (username, min_temp, max_temp, min_humidity, max_humidity, motion_detection_enabled, eco_mode_enabled, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+                [username, min_temp, max_temp, min_humidity, max_humidity, motion_detection_enabled, eco_mode_enabled],
+                function (err) {
+                    if (err) {
+                        console.error("Insert Config DB Error:", err.message);
+                        return res.status(500).json({ error: "Failed to insert config" });
+                    }
+                    res.status(200).json({ message: "Configuration saved successfully", config_id: this.lastID });
+                }
+            );
+        }
+    });
 });
 
 
@@ -172,7 +202,7 @@ app.post("/api/relay", (req, res) => { //POST to this endpoint from frontend whe
         if (row) {
             // User found, return success with IP
             console.log("User found.(/api/relay)");
-            return res.status(200).json({pir: row.pir, temp: row.temp});
+            return res.status(200).json({pir: row.pir, temp: row.temp, humid: row.humidity});
             
         }
     });
